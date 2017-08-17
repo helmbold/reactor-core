@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  * A key/value store that is propagated between components such as operators via the
@@ -75,6 +76,22 @@ public interface Context {
 		}
 		throw new NoSuchElementException("Context does not contain a value of type "+key
 				.getName());
+	}
+
+	/**
+	 * Resolve a value given a key within the {@link Context}. If unresolved return the
+	 * passed default value.
+	 *
+	 * @param key a lookup key to resolve the value within the context
+	 * @param defaultValue a fallback value if key doesn't resolve
+	 *
+	 * @return an eventual value or the default passed
+	 */
+	default <T> T getOrDefault(Object key, T defaultValue){
+		if(!hasKey(key)){
+			return defaultValue;
+		}
+		return get(key);
 	}
 
 	/**

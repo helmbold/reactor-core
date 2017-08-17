@@ -60,6 +60,11 @@ final class ContextN extends HashMap<Object, Object>
 	}
 
 	@Override
+	public Object getOrDefault(Object key, Object defaultValue) {
+		return Context.super.getOrDefault(key, defaultValue);
+	}
+
+	@Override
 	public Stream<Entry<Object, Object>> stream() {
 		return entrySet().stream().map(this);
 	}
