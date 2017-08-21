@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
@@ -823,5 +824,39 @@ public class EmitterProcessorTest {
 		test.sink().error(new IllegalStateException("boom"));
 
 		assertThat(test.scan(Attr.ERROR)).hasMessage("boom");
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/763
+	@Test(timeout = 5000)
+	public void testRingbufferOverflow() throws Exception {
+		int bufferSize = 10;
+		EmitterProcessor<Integer> processor = EmitterProcessor.create(bufferSize);
+		for (int i = 0; i < bufferSize * 10; i++) {
+			processor.onNext(i);
+		}
+		processor.onComplete();
+
+		List<Integer> block = processor.collectList().block();
+		assertThat(block).hasSize(bufferSize);
+	}
+
+	@Test(timeout = 5000)
+	public void testRingbufferOverflowDrops() throws Exception {
+		AtomicInteger dropCount = new AtomicInteger();
+		Hooks.onNextDropped(v -> {
+			System.out.println("recycling " + v);
+			dropCount.incrementAndGet();
+		});
+
+		int bufferSize = 10;
+		EmitterProcessor<Integer> processor = EmitterProcessor.create(bufferSize);
+		for (int i = 0; i < bufferSize * 10; i++) {
+			processor.onNext(i);
+		}
+		processor.onComplete();
+
+		List<Integer> block = processor.collectList().block();
+		assertThat(block).hasSize(bufferSize);
+		assertThat(dropCount.get()).isEqualTo(bufferSize * 10 - bufferSize);
 	}
 }

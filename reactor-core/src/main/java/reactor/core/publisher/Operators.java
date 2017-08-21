@@ -296,9 +296,13 @@ public abstract class Operators {
 
 	/**
 	 * An unexpected event is about to be dropped.
+	 * <p>
+	 * If no hook is registered for {@link Hooks#onNextDropped(Consumer)}, a
+	 * {@link Exceptions#failWithCancel() cancellation exception} is thrown.
 	 *
 	 * @param <T> the dropped value type
 	 * @param t the dropped data
+	 * @see #onNextDroppedSafe(Object)
 	 */
 	public static <T> void onNextDropped(T t) {
 		//noinspection ConstantConditions
@@ -308,6 +312,29 @@ public abstract class Operators {
 				throw Exceptions.failWithCancel();
 			}
 			hook.accept(t);
+		}
+	}
+
+	/**
+	 * An unexpected event is about to be dropped.
+	 * <p>
+	 * If no hook is registered for {@link Hooks#onNextDropped(Consumer)}, the dropped
+	 * element is just logged at DEBUG level.
+	 *
+	 * @param <T> the dropped value type
+	 * @param t the dropped data
+	 * @see #onNextDropped(Object)
+	 */
+	public static <T> void onNextDroppedSafe(T t) {
+		//noinspection ConstantConditions
+		if(t != null) {
+			Consumer<Object> hook = Hooks.onNextDroppedHook;
+			if (hook != null) {
+				hook.accept(t);
+			}
+			else if (log.isDebugEnabled()) {
+				log.debug("onNextDropped: " + t);
+			}
 		}
 	}
 

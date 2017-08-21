@@ -261,9 +261,13 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 			}
 		}
 
-		while (!q.offer(t)) {
-			LockSupport.parkNanos(10);
+//		actual capacity can differ from prefetch so looping offer isn't a satisfying solution
+		if (q.size() == prefetch) {
+			//we recycle the head of the queue and poll
+			T dropped = q.poll();
+			Operators.onNextDroppedSafe(dropped);
 		}
+		q.offer(t);
 		drain();
 	}
 
